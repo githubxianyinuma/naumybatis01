@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--前面4行为XML规定的约束文件-->
+<!--namespace命名空间指向interface接口的地址-->
+<mapper namespace="com.iweb.mapper.AccountMapper">
+    <cache></cache>
+    <resultMap id="accountMap" type="account">
+        <id column="id" property="id"></id>
+        <result column="uid" property="uid"></result>
+        <result column="money" property="money"></result>
+
+        <association property="user" javaType="user">
+            <id column="id" property="id"></id>
+            <result column="username" property="username"></result>
+            <result column="birthday" property="birthday"></result>
+            <result column="sex" property="sex"></result>
+            <result column="address" property="address"></result>
+            <result column="age" property="age"></result>
+            <result column="national" property="guojia"></result>
+        </association>
+    </resultMap>
+
+    <select id="selectAllAccount" resultMap="accountMap" useCache="true">
+--         查询所有的卡信息（id，uid，money------对应的人信息）
+        select a.*,u.username,u.birthday,u.sex,u.address,u.age,u.national from account a
+            left join user u
+                on a.uid = u.id
+    </select>
+</mapper>

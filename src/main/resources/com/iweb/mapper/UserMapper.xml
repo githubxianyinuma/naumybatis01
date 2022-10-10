@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--前面4行为XML规定的约束文件-->
+<!--namespace命名空间指向interface接口的地址-->
+<mapper namespace="com.iweb.mapper.UserMapper">
+<!-- SQL片段，抽取重复的语句代码片段 -->
+    <sql id="selectAll">
+        select * from user
+    </sql>
+<!--    id 指向接口里面方法的名字,因为这里的接口文件中，使用的是findall方法，resultType的意思是查询出来的结果，以什么形式进行封装-->
+     <select id="findAll" resultType="user">
+         <include refid="selectAll"></include>
+     </select>
+<!--    如果数据库中的表名与设置的表名不一样，解决办法-->
+<!--    第一种：-->
+    <select id="findAll1" resultType="user">
+        select id,username,birthday,sex,address,age,national guojia from user
+    </select>
+<!--    第二种-->
+    <resultMap id="userMap" type="user">
+        <id column="id" property="id"></id>
+        <result column="national" property="guojia"></result>
+    </resultMap>
+    <select id="findAll2" resultMap="userMap">
+        select * from user
+    </select>
+<!--    写的id如何在sql语句接收，写一个parameterType参数接受integer类型，占位表达式#{id}-->
+    <select id="findbyId" parameterType="integer" resultType="user">
+        select * from user where id= #{id}
+    </select>
+<!--    通过多个id查询多个信息,item为循环出的元素,separator为分隔符-->
+    <select id="findByIds" parameterType="List" resultType="user">
+        select * from user where id in
+        <foreach collection="list" open="(" close=")" item="id" separator=",">
+            #{id}
+        </foreach>
+    </select>
+<!--    插入，修改，删除的返回值都是integer-->
+    <insert id="add" parameterType="user">
+        insert into user(username,birthday,sex,address)
+        values
+            (#{username},#{birthday},#{sex},#{address})
+    </insert>
+<!--    插入多条记录-->
+    <insert id="insetBatch" parameterType="list">
+        insert into user(username,birthday,sex,address,age)
+        values
+        <foreach collection="list" item="user" separator=",">
+            (#{user.username},#{user.birthday},#{user.sex},#{user.address},#{user.age})
+        </foreach>
+    </insert>
+    <delete id="deleteById" parameterType="integer">
+        delete from user where id = #{id}
+    </delete>
+<!--    修改一条记录升级版-->
+    <update id="update1" parameterType="user">
+        update user
+            <set>
+                <if test="username !=null and username !=''">
+                    username=#{username},
+                </if>
+                <if test="birthday !=null">
+                    birthday=#{birthday},
+                </if>
+                <if test="sex !=null and sex !=''">
+                    sex=#{sex},
+                </if>
+                <if test="address !=null and address !=''">
+                    address=#{address}
+                </if>
+            </set>
+        where id = #{id}
+    </update>
+    <update id="update" parameterType="user">
+        update user set username=#{username},birthday=#{birthday},sex=#{sex},address=#{address}
+        where id = #{id}
+--         限制id,否则SQL语句修改数据库所有信息
+    </update>
+<!--    模糊查询-->
+    <select id="findUserByAddress" parameterType="string" resultType="user">
+        select * from user where address like #{address}
+    </select>
+<!--    根据地址和性别、年龄进行查询（多个条件）模糊查询,&gt;代表大于-->
+<!--    #{}和${}的区别-->
+<!--    #{}先预编译，#{}表示一个占位符号，通过#{}可以实现 preparedStatement 向占位符中设置值，自动进行 java 类型和 jdbc 类型转换，-->
+<!--    #{}可以有效防止sql注入漏洞。#{}可以接收简单类型值或 pojo 属性值。 如果 parameterType 传输单个简单类型值，#{}括号中可以是 value 或其它名称。-->
+<!--    ${}表示拼接sql串，硬拼SQL语句，产生SQL注入漏洞，保留的原因是运行速度快，通过${}可以将 parameterType 传入的内容拼接在 sql 中且不进行 jdbc 类型转换， ${}可以接收简单类型值或 pojo 属性值，如果 parameterType 传输单个简单类型值，${}括号中只能是 value。-->
+<!--    <select id="findUserByCondition" resultType="user">-->
+<!--        select * from user where address like #{address} and sex=#{sex} and age &gt; #{age}-->
+<!--    </select>-->
+    <select id="findUserByCondition" resultType="user">
+        select * from user where address like '${address}' and sex='${sex}' and age &gt; ${age}
+    </select>
+<!--    动态SQL的if语句，可以根据输入的值，动态设置SQL语句-->
+    <select id="findUserByCondition1" resultType="user">
+        select * from user where 1=1
+            <if test="address !=null and address !=''">
+                and address like #{address}
+            </if>
+            <if test="sex !=null and sex !=''">
+                and sex=#{sex}
+            </if>
+            <if test="age !=null and age !=''">
+                and age &gt; #{age}
+            </if>
+    </select>
+<!--    为了解决两个问题，第一个where这个关键字加还是不加，第二个问题，前面的and拼还是不品-->
+    <select id="findUserByCondition2" resultType="user">
+        select * from user
+            <where>
+                <if test="address !=null and address !=''">
+                    address like #{address}
+                </if>
+                <if test="sex !=null and sex !=''">
+                    and sex=#{sex}
+                </if>
+                <if test="age !=null and age !=''">
+                    and age &gt; #{age}
+                </if>
+            </where>
+    </select>
+<!--    查询总人数-->
+    <select id="findSum" resultType="integer">
+        select count(*) sumCount from user
+    </select>
+<!--    两张表，查询所有用户和账户表信息（方法一），设计一个两张表的集合类UserAccount-->
+    <select id="findAllUserAccount" resultType="useraccount">
+        select user.id, username, birthday, sex, address, age, national guojia, account.id accountId, money
+        from user
+        left join
+            account
+        on user.id = account.uid
+    </select>
+<!--    两张表，查询所有用户和账户表信息（方法二），设计一个Hashmap-->
+    <select id="findAllUserAccountMap" resultType="map">
+        select user.id, username, birthday, sex, address, age, national guojia, account.id accountId, money
+        from user
+            left join
+            account
+        on user.id = account.uid
+    </select>
+<!--    两张表，查询所有用户和账户表信息（方法三），设计一个List数组-->
+    <resultMap id="allUsersMap" type="user">
+<!--        User类对应-->
+        <id column="id" property="id"></id>
+        <result column="username" property="username"></result>
+        <result column="birthday" property="birthday"></result>
+        <result column="sex" property="sex"></result>
+        <result column="address" property="address"></result>
+        <result column="age" property="age"></result>
+        <result column="national" property="guojia"></result>
+<!--        account对应-->
+        <collection property="accountList" ofType="account">
+            <id column="accountId" property="id"></id>
+            <result column="id" property="uid"></result>
+            <result column="money" property="money"></result>
+        </collection>
+    </resultMap>
+<!--    把查询出来的结果，和Users类做对应关系-->
+    <select id="findAllUsers" resultMap="allUsersMap">
+        select user.id, username, birthday, sex, address, age, national, account.id accountId, money
+        from user
+            left join
+            account
+        on user.id = account.uid
+    </select>
+</mapper>
